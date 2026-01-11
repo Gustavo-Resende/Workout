@@ -135,3 +135,79 @@ Content-Type: application/json
 }
 
 ###
+
+### ========================================
+### WORKOUT EXERCISES - Relacionamento
+### ========================================
+
+### Listar exercícios de um treino (substitua {workoutId})
+GET {{baseUrl}}/workouts/{workoutId}/exercises
+
+###
+
+### Adicionar exercício ao treino (substitua {workoutId} e {exerciseId})
+POST {{baseUrl}}/workouts/{eab23feb-41e9-4f38-8434-6d6d88ee9fec}/exercises
+Content-Type: application/json
+
+{
+    "exercise_id": "ef11fdf3-20da-4291-8257-7baba289c3ca",
+    "weight": 60.5,
+    "sets": 3,
+    "reps": 12
+}
+
+###
+
+### Atualizar peso/séries/reps (substitua {workoutId} e {exerciseId})
+PUT {{baseUrl}}/workouts/{workoutId}/exercises/{exerciseId}
+Content-Type: application/json
+
+{
+    "weight": 65.0,
+    "sets": 4,
+    "reps": 10
+}
+
+###
+
+### Atualizar apenas peso (atualização parcial)
+PUT {{baseUrl}}/workouts/{workoutId}/exercises/{exerciseId}
+Content-Type: application/json
+
+{
+    "weight": 70.0
+}
+
+###
+
+### Remover exercício do treino
+DELETE {{baseUrl}}/workouts/{workoutId}/exercises/{exerciseId}
+
+###
+
+### Teste: Adicionar exercício duplicado (erro 409)
+POST {{baseUrl}}/workouts/{workoutId}/exercises
+Content-Type: application/json
+
+{
+    "exercise_id": "mesmo-exercise-id-de-cima",
+    "weight": 60.5,
+    "sets": 3,
+    "reps": 12
+}
+
+###
+
+### Teste: Peso negativo (erro 400)
+POST {{baseUrl}}/workouts/{workoutId}/exercises
+Content-Type: application/json
+
+{
+    "exercise_id": "outro-exercise-id",
+    "weight": -10,
+    "sets": 3,
+    "reps": 12
+}
+
+###
+

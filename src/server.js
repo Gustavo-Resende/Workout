@@ -1,6 +1,7 @@
 import { fastify } from 'fastify';
 import { workoutRoutes } from './routes/workoutRoutes.js';
 import { exerciseRoutes } from './routes/exerciseRoutes.js';
+import { workoutExerciseRoutes } from './routes/workoutExerciseRoutes.js';
 
 const server = fastify({
     logger: true
@@ -8,6 +9,7 @@ const server = fastify({
 
 server.register(workoutRoutes);
 server.register(exerciseRoutes);
+server.register(workoutExerciseRoutes);
 
 server.listen({ port: 3000 }, (err, address) => {
     if (err) {
