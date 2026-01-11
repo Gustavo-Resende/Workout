@@ -1,0 +1,61 @@
+@baseUrl = http://localhost:3000
+
+### Listar todos os treinos
+GET {{baseUrl}}/workouts
+
+###
+
+### Criar novo treino
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+
+{
+    "name": "Treino A - Peito e Tríceps"
+}
+
+###
+
+### Criar outro treino
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+
+{
+    "name": "Treino B - Costas e Bíceps"
+}
+
+###
+
+### Buscar treino por ID (substitua {id} pelo ID real)
+GET {{baseUrl}}/workouts/{id}
+
+###
+
+### Atualizar treino (substitua {id} pelo ID real)
+PUT {{baseUrl}}/workouts/{id}
+Content-Type: application/json
+
+{
+    "name": "Treino A - Atualizado"
+}
+
+###
+
+### Deletar treino (substitua {id} pelo ID real)
+DELETE {{baseUrl}}/workouts/{f03817fb-6831-4a82-80c6-96e431742b42}
+
+###
+
+### Teste: Criar treino sem nome (erro 400)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+
+{
+    "name": ""
+}
+
+###
+
+### Teste: Buscar treino inexistente (erro 404)
+GET {{baseUrl}}/workouts/00000000-0000-0000-0000-000000000000
+
+###
