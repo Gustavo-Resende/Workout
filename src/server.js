@@ -1,14 +1,14 @@
 import { fastify } from 'fastify';
 import { workoutRoutes } from './routes/workoutRoutes.js';
+import { exerciseRoutes } from './routes/exerciseRoutes.js';
 
 const server = fastify({
     logger: true
 });
 
-// Registrar rotas (similar a usar controllers no ASP.NET Core)
 server.register(workoutRoutes);
+server.register(exerciseRoutes);
 
-// Iniciar servidor
 server.listen({ port: 3000 }, (err, address) => {
     if (err) {
         console.error(err);

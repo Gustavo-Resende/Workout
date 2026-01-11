@@ -1,5 +1,9 @@
 @baseUrl = http://localhost:3000
 
+### ========================================
+### WORKOUTS - CRUD Completo
+### ========================================
+
 ### Listar todos os treinos
 GET {{baseUrl}}/workouts
 
@@ -57,5 +61,77 @@ Content-Type: application/json
 
 ### Teste: Buscar treino inexistente (erro 404)
 GET {{baseUrl}}/workouts/00000000-0000-0000-0000-000000000000
+
+###
+
+### ========================================
+### EXERCISES - CRUD Completo
+### ========================================
+
+### Listar todos os exercícios
+GET {{baseUrl}}/exercises
+
+###
+
+### Criar novo exercício
+POST {{baseUrl}}/exercises
+Content-Type: application/json
+
+{
+    "name": "Supino Reto",
+    "muscle_group": "Peito"
+}
+
+###
+
+### Criar outro exercício
+POST {{baseUrl}}/exercises
+Content-Type: application/json
+
+{
+    "name": "Leg Press",
+    "muscle_group": "Perna"
+}
+
+###
+
+### Criar exercício sem muscle_group (opcional)
+POST {{baseUrl}}/exercises
+Content-Type: application/json
+
+{
+    "name": "Abdominal"
+}
+
+###
+
+### Buscar exercício por ID
+GET {{baseUrl}}/exercises/{id}
+
+###
+
+### Atualizar exercício
+PUT {{baseUrl}}/exercises/{id}
+Content-Type: application/json
+
+{
+    "name": "Supino Inclinado",
+    "muscle_group": "Peito"
+}
+
+###
+
+### Deletar exercício
+DELETE {{baseUrl}}/exercises/{id}
+
+###
+
+### Teste: Criar exercício duplicado (erro 409)
+POST {{baseUrl}}/exercises
+Content-Type: application/json
+
+{
+    "name": "Supino Reto"
+}
 
 ###
