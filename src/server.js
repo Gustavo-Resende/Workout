@@ -1,3 +1,4 @@
+import dotenv from 'dotenv';
 import { fastify } from 'fastify';
 import cors from '@fastify/cors';
 import { workoutRoutes } from './routes/workoutRoutes.js';
@@ -5,6 +6,9 @@ import { exerciseRoutes } from './routes/exerciseRoutes.js';
 import { workoutExerciseRoutes } from './routes/workoutExerciseRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authRoutes } from './routes/authRoutes.js';
+
+// Carrega variáveis de ambiente
+dotenv.config();
 
 const server = fastify({
     logger: true

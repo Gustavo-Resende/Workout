@@ -18,6 +18,8 @@ Sistema de gestão de treinos que permite:
 - **pg** - Cliente PostgreSQL para Node.js
 - **Zod** - Biblioteca de validação de schemas
 - **dotenv** - Gerenciamento de variáveis de ambiente
+- **JWT (jsonwebtoken)** - Autenticação baseada em tokens
+- **bcrypt** - Hash de senhas
 - **Docker** - Containerização da aplicação e banco de dados
 
 ## 📦 Pré-requisitos
@@ -40,13 +42,17 @@ cd workout
 
 ### Opção 1: Docker (Recomendado)
 
-2. Configure as variáveis de ambiente (opcional):
-Crie um arquivo `.env` na raiz do projeto se quiser customizar:
+2. Configure as variáveis de ambiente:
+Crie um arquivo `.env` na raiz do projeto:
 ```env
 DB_NAME=workouts
 DB_USER=postgres
 DB_PASSWORD=postgres
+JWT_SECRET=sua-chave-secreta-jwt-aqui
+JWT_EXPIRES_IN=7d
 ```
+
+**Dica:** Use `npm run generate:jwt-secret` para gerar uma chave JWT segura.
 
 **Nota:** Se não criar o `.env`, os valores padrão serão usados.
 
@@ -78,7 +84,11 @@ DB_PORT=5432
 DB_NAME=workouts
 DB_USER=postgres
 DB_PASSWORD=sua_senha
+JWT_SECRET=sua-chave-secreta-jwt-aqui
+JWT_EXPIRES_IN=7d
 ```
+
+**Dica:** Use `npm run generate:jwt-secret` para gerar uma chave JWT segura.
 
 4. Crie o banco de dados no PostgreSQL:
 ```sql
@@ -134,22 +144,31 @@ workout/
 │   │   ├── ValidationError.js            # Erro de validação (400)
 │   │   ├── NotFoundError.js              # Erro de não encontrado (404)
 │   │   ├── ConflictError.js              # Erro de conflito (409)
+│   │   ├── UnauthorizedError.js          # Erro de não autorizado (401)
 │   │   └── DatabaseError.js              # Erro de banco de dados (500)
 │   ├── middleware/
+│   │   ├── authMiddleware.js             # Middleware de autenticação JWT
 │   │   └── errorHandler.js               # Middleware global de tratamento de erros
 │   ├── repositories/
+│   │   ├── UserRepository.js             # Lógica de acesso a dados - Usuários
 │   │   ├── WorkoutRepository.js          # Lógica de acesso a dados - Treinos
 │   │   ├── ExerciseRepository.js         # Lógica de acesso a dados - Exercícios
 │   │   └── WorkoutExerciseRepository.js  # Lógica de acesso a dados - Relacionamento
 │   ├── routes/
+│   │   ├── authRoutes.js                  # Rotas - Autenticação
 │   │   ├── workoutRoutes.js              # Rotas - Treinos
 │   │   ├── exerciseRoutes.js             # Rotas - Exercícios
 │   │   └── workoutExerciseRoutes.js      # Rotas - Relacionamento
 │   ├── schemas/
+│   │   ├── authSchemas.js                 # Schemas Zod - Autenticação
 │   │   ├── workoutSchemas.js             # Schemas Zod - Treinos
 │   │   ├── exerciseSchemas.js            # Schemas Zod - Exercícios
 │   │   └── workoutExerciseSchemas.js     # Schemas Zod - Relacionamento
+│   ├── utils/
+│   │   └── jwt.js                         # Utilitários JWT (gerar/verificar tokens)
 │   └── server.js                          # Arquivo principal (entrada da aplicação)
+├── scripts/
+│   └── generate-jwt-secret.js            # Script para gerar chave JWT segura
 ├── docker-compose.yml                     # Configuração Docker Compose
 ├── Dockerfile                             # Configuração da imagem Docker
 ├── .dockerignore                          # Arquivos ignorados no build Docker
@@ -164,45 +183,108 @@ workout/
 
 ## 🎯 Endpoints da API
 
-### Workouts (Treinos)
+### Autenticação
 
-- `GET /workouts` - Lista todos os treinos
-- `GET /workouts/:id` - Busca treino por ID
+- `POST /auth/register` - Registra novo usuário (público)
+- `POST /auth/login` - Faz login e retorna token JWT (público)
+
+**Nota:** Todos os outros endpoints requerem autenticação via JWT. Inclua o token no header:
+```
+Authorization: Bearer <seu-token-jwt>
+```
+
+### Workouts (Treinos) 🔒
+
+- `GET /workouts` - Lista todos os treinos do usuário autenticado
+- `GET /workouts/:id` - Busca treino por ID (do usuário autenticado)
 - `POST /workouts` - Cria novo treino
 - `PUT /workouts/:id` - Atualiza treino
 - `DELETE /workouts/:id` - Deleta treino
 
-### Exercises (Exercícios)
+### Exercises (Exercícios) 🔒
 
-- `GET /exercises` - Lista todos os exercícios
-- `GET /exercises/:id` - Busca exercício por ID
+- `GET /exercises` - Lista todos os exercícios do usuário autenticado
+- `GET /exercises/:id` - Busca exercício por ID (do usuário autenticado)
 - `POST /exercises` - Cria novo exercício
 - `PUT /exercises/:id` - Atualiza exercício
 - `DELETE /exercises/:id` - Deleta exercício
 
-### Workout Exercises (Relacionamento)
+### Workout Exercises (Relacionamento) 🔒
 
 - `GET /workouts/:workoutId/exercises` - Lista exercícios de um treino
 - `POST /workouts/:workoutId/exercises` - Adiciona exercício ao treino
 - `PUT /workouts/:workoutId/exercises/:exerciseId` - Atualiza peso/séries/reps
 - `DELETE /workouts/:workoutId/exercises/:exerciseId` - Remove exercício do treino
 
+🔒 = Requer autenticação JWT
+
 ## 📝 Exemplos de Uso
 
-### Criar um treino:
+### 1. Registrar um novo usuário:
+```bash
+POST http://localhost:3001/auth/register
+Content-Type: application/json
+
+{
+    "name": "João Silva",
+    "email": "joao@example.com",
+    "password": "senhaSegura123"
+}
+```
+
+**Resposta:**
+```json
+{
+    "message": "User registered successfully",
+    "user": {
+        "id": "uuid-do-usuario",
+        "name": "João Silva",
+        "email": "joao@example.com"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### 2. Fazer login:
+```bash
+POST http://localhost:3001/auth/login
+Content-Type: application/json
+
+{
+    "email": "joao@example.com",
+    "password": "senhaSegura123"
+}
+```
+
+**Resposta:**
+```json
+{
+    "message": "Login successful",
+    "user": {
+        "id": "uuid-do-usuario",
+        "name": "João Silva",
+        "email": "joao@example.com"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### 3. Criar um treino (requer autenticação):
 ```bash
 POST http://localhost:3001/workouts
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 {
     "name": "Treino A - Peito e Tríceps"
 }
 ```
 
-### Criar um exercício:
+### 4. Criar um exercício (requer autenticação):
 ```bash
 POST http://localhost:3001/exercises
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 {
     "name": "Supino Reto",
@@ -210,10 +292,11 @@ Content-Type: application/json
 }
 ```
 
-### Adicionar exercício ao treino:
+### 5. Adicionar exercício ao treino (requer autenticação):
 ```bash
 POST http://localhost:3001/workouts/{workoutId}/exercises
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 {
     "exercise_id": "{exerciseId}",
@@ -223,15 +306,17 @@ Content-Type: application/json
 }
 ```
 
-### Listar exercícios de um treino:
+### 6. Listar exercícios de um treino (requer autenticação):
 ```bash
 GET http://localhost:3001/workouts/{workoutId}/exercises
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### Atualizar carga/séries/reps:
+### 7. Atualizar carga/séries/reps (requer autenticação):
 ```bash
 PUT http://localhost:3001/workouts/{workoutId}/exercises/{exerciseId}
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 {
     "weight": 65.0,
@@ -240,7 +325,9 @@ Content-Type: application/json
 }
 ```
 
-**Nota:** Se estiver usando instalação local, use a porta `3000` em vez de `3001`.
+**Nota:** 
+- Se estiver usando instalação local, use a porta `3000` em vez de `3001`.
+- Substitua `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` pelo token real retornado no login/registro.
 
 ## 🗄️ Estrutura do Banco de Dados
 
@@ -250,10 +337,10 @@ Content-Type: application/json
 |-----------|-------------|------------------------------|
 | id        | UUID        | Identificador único          |
 | name      | VARCHAR(255)| Nome do treino               |
-| user_id   | UUID        | ID do usuário (futuro)       |
+| user_id   | UUID        | ID do usuário (FK)           |
 | created_at| TIMESTAMP   | Data de criação              |
 
-**Constraints:** UNIQUE(name, user_id)
+**Constraints:** UNIQUE(name, user_id) - Nome único por usuário
 
 ### Tabela: exercises
 
@@ -261,10 +348,11 @@ Content-Type: application/json
 |------------|-------------|------------------------------|
 | id         | UUID        | Identificador único          |
 | name       | VARCHAR(255)| Nome do exercício            |
+| user_id    | UUID        | ID do usuário (FK)           |
 | muscle_group| VARCHAR(100)| Grupo muscular (opcional)    |
 | created_at | TIMESTAMP   | Data de criação              |
 
-**Constraints:** UNIQUE(name)
+**Constraints:** UNIQUE(name, user_id) - Nome único por usuário
 
 ### Tabela: workout_exercises
 
@@ -273,6 +361,7 @@ Content-Type: application/json
 | id        | UUID        | Identificador único          |
 | workout_id| UUID        | FK para workouts             |
 | exercise_id| UUID       | FK para exercises            |
+| user_id   | UUID        | ID do usuário (FK)           |
 | weight    | DECIMAL(5,2)| Peso (kg)                    |
 | sets      | INTEGER     | Número de séries             |
 | reps      | INTEGER     | Número de repetições         |
@@ -286,6 +375,15 @@ Content-Type: application/json
 - CHECK (reps >= 1) - Mínimo 1 repetição
 - FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE
 - FOREIGN KEY (exercise_id) REFERENCES exercises(id)
+- FOREIGN KEY (user_id) REFERENCES users(id)
+
+## 🔐 Autenticação
+
+A API utiliza **JWT** para autenticação. Após fazer login ou registrar-se, você receberá um token que deve ser incluído em todas as requisições subsequentes no header `Authorization: Bearer <token>`.
+
+**Variáveis de ambiente:**
+- `JWT_SECRET`: Chave secreta para assinar os tokens (gere com `npm run generate:jwt-secret`)
+- `JWT_EXPIRES_IN`: Tempo de expiração do token (padrão: `7d`)
 
 ## 🔐 Validações e Regras de Negócio
 
@@ -298,7 +396,7 @@ O projeto utiliza **Zod** para validação de schemas na camada de rotas, garant
 
 ### Exercises (Exercícios)
 - **Validação Zod**: Nome é obrigatório (string não vazia), muscle_group é opcional
-- **Regra de negócio**: Nome único global (não pode repetir)
+- **Regra de negócio**: Nome único por usuário (cada usuário pode ter seus próprios exercícios)
 
 ### Workout Exercises (Relacionamento)
 - **Validação Zod**: 
@@ -307,7 +405,7 @@ O projeto utiliza **Zod** para validação de schemas na camada de rotas, garant
   - `sets`: número >= 1 (mínimo 1 série)
   - `reps`: número >= 1 (mínimo 1 repetição)
 - **Regra de negócio**: 
-  - Workout e Exercise devem existir
+  - Workout e Exercise devem existir e pertencer ao usuário autenticado
   - Não permite mesmo exercício repetido no mesmo treino
   - Permite atualização parcial (atualizar apenas weight, ou só sets, etc.)
 
@@ -317,6 +415,7 @@ O projeto utiliza **Zod** para validação de schemas na camada de rotas, garant
 - `201` - Created (criado com sucesso)
 - `204` - No Content (deletado com sucesso)
 - `400` - Bad Request (validação falhou)
+- `401` - Unauthorized (token inválido ou não fornecido)
 - `404` - Not Found (recurso não encontrado)
 - `409` - Conflict (duplicado - nome já existe)
 - `500` - Internal Server Error (erro interno do servidor)
@@ -329,6 +428,7 @@ O projeto inclui um arquivo `.http` com exemplos de requisições para testar to
 
 - `npm start` - Inicia o servidor em modo produção
 - `npm run dev` - Inicia o servidor em modo desenvolvimento (com watch)
+- `npm run generate:jwt-secret` - Gera chave JWT segura
 
 ## 🏗️ Arquitetura
 

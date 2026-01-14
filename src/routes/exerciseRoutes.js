@@ -3,14 +3,17 @@ import { NotFoundError } from '../errors/NotFoundError.js';
 import { ValidationError } from '../errors/ValidationError.js';
 import { ConflictError } from '../errors/ConflictError.js';
 import { createExerciseSchema, updateExerciseSchema } from '../schemas/exerciseSchemas.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 
 const exerciseRepository = new ExerciseRepository();
 
 export async function exerciseRoutes(fastify, options) {
     
+    fastify.addHook('onRequest', authenticate);
+    
     fastify.get('/exercises', async (request, reply) => {
         try {
-            const exercises = await exerciseRepository.list();
+            const exercises = await exerciseRepository.list(request.userId);
             return reply.status(200).send({ exercises });
         } catch (error) {
             throw error;
@@ -21,7 +24,7 @@ export async function exerciseRoutes(fastify, options) {
         try {
             const { id } = request.params;
             
-            const exercise = await exerciseRepository.findById(id);
+            const exercise = await exerciseRepository.findById(id, request.userId);
             
             if (!exercise) {
                 throw new NotFoundError('Exercise not found');
@@ -42,12 +45,16 @@ export async function exerciseRoutes(fastify, options) {
 
             const { name, muscle_group } = validation.data;
 
-            const existingExercise = await exerciseRepository.findByName(name);
+            const existingExercise = await exerciseRepository.findByName(name, request.userId);
             if (existingExercise) {
                 throw new ConflictError('Exercise with this name already exists');
             }
 
-            const exercise = await exerciseRepository.create({ name, muscle_group });
+            const exercise = await exerciseRepository.create({ 
+                name, 
+                muscle_group, 
+                user_id: request.userId 
+            });
             
             return reply.status(201).send({ 
                 message: 'Exercise created successfully',
@@ -69,17 +76,17 @@ export async function exerciseRoutes(fastify, options) {
 
             const { name, muscle_group } = validation.data;
 
-            const existingExercise = await exerciseRepository.findById(id);
+            const existingExercise = await exerciseRepository.findById(id, request.userId);
             if (!existingExercise) {
                 throw new NotFoundError('Exercise not found');
             }
 
-            const exerciseWithSameName = await exerciseRepository.findByName(name);
+            const exerciseWithSameName = await exerciseRepository.findByName(name, request.userId);
             if (exerciseWithSameName && exerciseWithSameName.id !== id) {
                 throw new ConflictError('Exercise with this name already exists');
             }
 
-            const exercise = await exerciseRepository.update(id, { name, muscle_group });
+            const exercise = await exerciseRepository.update(id, { name, muscle_group }, request.userId);
             
             return reply.status(200).send({ 
                 message: 'Exercise updated successfully',
@@ -94,12 +101,12 @@ export async function exerciseRoutes(fastify, options) {
         try {
             const { id } = request.params;
 
-            const existingExercise = await exerciseRepository.findById(id);
+            const existingExercise = await exerciseRepository.findById(id, request.userId);
             if (!existingExercise) {
                 throw new NotFoundError('Exercise not found');
             }
 
-            await exerciseRepository.delete(id);
+            await exerciseRepository.delete(id, request.userId);
             
             return reply.status(204).send();
         } catch (error) {
