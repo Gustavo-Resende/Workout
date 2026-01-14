@@ -17,9 +17,14 @@ Sistema de gestão de treinos que permite:
 - **PostgreSQL** - Banco de dados relacional
 - **pg** - Cliente PostgreSQL para Node.js
 - **dotenv** - Gerenciamento de variáveis de ambiente
+- **Docker** - Containerização da aplicação e banco de dados
 
 ## 📦 Pré-requisitos
 
+### Opção 1: Docker (Recomendado)
+- Docker e Docker Compose instalados
+
+### Opção 2: Instalação Local
 - Node.js (v18 ou superior)
 - PostgreSQL (instalado e rodando)
 - npm ou yarn
@@ -32,6 +37,33 @@ git clone https://github.com/SEU_USUARIO/workout.git
 cd workout
 ```
 
+### Opção 1: Docker (Recomendado)
+
+2. Configure as variáveis de ambiente (opcional):
+Crie um arquivo `.env` na raiz do projeto se quiser customizar:
+```env
+DB_NAME=workouts
+DB_USER=postgres
+DB_PASSWORD=postgres
+```
+
+**Nota:** Se não criar o `.env`, os valores padrão serão usados.
+
+3. Inicie os containers:
+```bash
+docker-compose up -d
+```
+
+O Docker Compose irá:
+- Criar e iniciar o container PostgreSQL
+- Criar o banco de dados automaticamente
+- Executar o script `init.sql` para criar as tabelas
+- Criar e iniciar o container da aplicação Node.js
+
+A aplicação estará disponível em `http://localhost:3001`
+
+### Opção 2: Instalação Local
+
 2. Instale as dependências:
 ```bash
 npm install
@@ -42,58 +74,47 @@ Crie um arquivo `.env` na raiz do projeto:
 ```env
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=workout
+DB_NAME=workouts
 DB_USER=postgres
 DB_PASSWORD=sua_senha
 ```
 
 4. Crie o banco de dados no PostgreSQL:
 ```sql
-CREATE DATABASE workout;
+CREATE DATABASE workouts;
 ```
 
-5. Execute os scripts SQL para criar as tabelas:
-
-```sql
--- Tabela de Treinos
-CREATE TABLE workouts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    user_id UUID,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(name, user_id)
-);
-
--- Tabela de Exercícios
-CREATE TABLE exercises (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL UNIQUE,
-    muscle_group VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabela de Relacionamento (Treino-Exercício)
-CREATE TABLE workout_exercises (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
-    exercise_id UUID NOT NULL REFERENCES exercises(id),
-    weight DECIMAL(5,2) NOT NULL CHECK (weight >= 0),
-    sets INTEGER NOT NULL CHECK (sets >= 1),
-    reps INTEGER NOT NULL CHECK (reps >= 1),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(workout_id, exercise_id)
-);
-```
+5. Execute o script SQL:
+Execute o arquivo `init.sql` no PostgreSQL, ou copie e execute o conteúdo diretamente no seu cliente PostgreSQL.
 
 ## ▶️ Como executar
 
-### Desenvolvimento (com watch):
+### Com Docker (Recomendado)
+
+```bash
+# Iniciar containers
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f app
+
+# Parar containers
+docker-compose down
+
+# Parar e remover volumes (apaga dados)
+docker-compose down -v
+```
+
+A aplicação estará rodando em `http://localhost:3001`
+
+### Instalação Local
+
+#### Desenvolvimento (com watch):
 ```bash
 npm run dev
 ```
 
-### Produção:
+#### Produção:
 ```bash
 npm start
 ```
@@ -106,7 +127,15 @@ O servidor estará rodando em `http://localhost:3000`
 workout/
 ├── src/
 │   ├── database/
-│   │   └── database-postgres.js          # Pool de conexão
+│   │   └── database-postgres.js          # Pool de conexão PostgreSQL
+│   ├── errors/
+│   │   ├── AppError.js                   # Classe base de erros
+│   │   ├── ValidationError.js            # Erro de validação (400)
+│   │   ├── NotFoundError.js              # Erro de não encontrado (404)
+│   │   ├── ConflictError.js              # Erro de conflito (409)
+│   │   └── DatabaseError.js              # Erro de banco de dados (500)
+│   ├── middleware/
+│   │   └── errorHandler.js               # Middleware global de tratamento de erros
 │   ├── repositories/
 │   │   ├── WorkoutRepository.js          # Lógica de acesso a dados - Treinos
 │   │   ├── ExerciseRepository.js         # Lógica de acesso a dados - Exercícios
@@ -115,11 +144,16 @@ workout/
 │   │   ├── workoutRoutes.js              # Rotas - Treinos
 │   │   ├── exerciseRoutes.js             # Rotas - Exercícios
 │   │   └── workoutExerciseRoutes.js      # Rotas - Relacionamento
-│   └── server.js                          # Arquivo principal
+│   └── server.js                          # Arquivo principal (entrada da aplicação)
+├── docker-compose.yml                     # Configuração Docker Compose
+├── Dockerfile                             # Configuração da imagem Docker
+├── .dockerignore                          # Arquivos ignorados no build Docker
+├── init.sql                               # Script SQL para criação das tabelas
 ├── .env                                   # Variáveis de ambiente (não versionado)
 ├── .gitignore
 ├── .http                                  # Arquivo para testes REST Client
 ├── package.json
+├── package-lock.json
 └── README.md
 ```
 
@@ -152,7 +186,7 @@ workout/
 
 ### Criar um treino:
 ```bash
-POST http://localhost:3000/workouts
+POST http://localhost:3001/workouts
 Content-Type: application/json
 
 {
@@ -162,7 +196,7 @@ Content-Type: application/json
 
 ### Criar um exercício:
 ```bash
-POST http://localhost:3000/exercises
+POST http://localhost:3001/exercises
 Content-Type: application/json
 
 {
@@ -173,7 +207,7 @@ Content-Type: application/json
 
 ### Adicionar exercício ao treino:
 ```bash
-POST http://localhost:3000/workouts/{workoutId}/exercises
+POST http://localhost:3001/workouts/{workoutId}/exercises
 Content-Type: application/json
 
 {
@@ -186,12 +220,12 @@ Content-Type: application/json
 
 ### Listar exercícios de um treino:
 ```bash
-GET http://localhost:3000/workouts/{workoutId}/exercises
+GET http://localhost:3001/workouts/{workoutId}/exercises
 ```
 
 ### Atualizar carga/séries/reps:
 ```bash
-PUT http://localhost:3000/workouts/{workoutId}/exercises/{exerciseId}
+PUT http://localhost:3001/workouts/{workoutId}/exercises/{exerciseId}
 Content-Type: application/json
 
 {
@@ -200,6 +234,8 @@ Content-Type: application/json
     "reps": 10
 }
 ```
+
+**Nota:** Se estiver usando instalação local, use a porta `3000` em vez de `3001`.
 
 ## 🗄️ Estrutura do Banco de Dados
 
@@ -274,6 +310,7 @@ Content-Type: application/json
 - `400` - Bad Request (validação falhou)
 - `404` - Not Found (recurso não encontrado)
 - `409` - Conflict (duplicado - nome já existe)
+- `500` - Internal Server Error (erro interno do servidor)
 
 ## 🧪 Testes
 
@@ -286,10 +323,13 @@ O projeto inclui um arquivo `.http` com exemplos de requisições para testar to
 
 ## 🏗️ Arquitetura
 
-O projeto segue o padrão Repository Pattern:
-- **Routes**: Camada de rotas (endpoints HTTP)
-- **Repositories**: Camada de acesso a dados (lógica de banco)
-- **Database**: Configuração de conexão (pool)
+O projeto segue o padrão Repository Pattern com tratamento de erros centralizado:
+
+- **Routes**: Camada de rotas (endpoints HTTP) - recebe requisições e delega para repositories
+- **Repositories**: Camada de acesso a dados (lógica de banco) - abstrai operações SQL
+- **Database**: Configuração de conexão (pool PostgreSQL)
+- **Errors**: Classes de erro customizadas para diferentes tipos de falha
+- **Middleware**: Tratamento global de erros (errorHandler) - converte erros em respostas HTTP apropriadas
 
 ## 🤝 Contribuindo
 
