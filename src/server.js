@@ -4,6 +4,7 @@ import { workoutRoutes } from './routes/workoutRoutes.js';
 import { exerciseRoutes } from './routes/exerciseRoutes.js';
 import { workoutExerciseRoutes } from './routes/workoutExerciseRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { authRoutes } from './routes/authRoutes.js';
 
 const server = fastify({
     logger: true
@@ -17,6 +18,7 @@ server.register(cors, {
 });
 
 server.setErrorHandler(errorHandler);
+server.register(authRoutes);
 server.register(workoutRoutes);
 server.register(exerciseRoutes);
 server.register(workoutExerciseRoutes);
