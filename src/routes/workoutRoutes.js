@@ -2,6 +2,7 @@ import { WorkoutRepository } from '../repositories/WorkoutRepository.js';
 import { NotFoundError } from '../errors/NotFoundError.js';
 import { ValidationError } from '../errors/ValidationError.js';
 import { ConflictError } from '../errors/ConflictError.js';
+import { createWorkoutSchema, updateWorkoutSchema } from '../schemas/workoutSchemas.js';
 
 const workoutRepository = new WorkoutRepository();
 
@@ -34,11 +35,13 @@ export async function workoutRoutes(fastify, options) {
 
     fastify.post('/workouts', async (request, reply) => {
         try {
-            const { name } = request.body;
-
-            if (!name || name.trim() === '') {
-                throw new ValidationError('Name is required');
+            // Validação com Zod
+            const validation = createWorkoutSchema.safeParse(request.body);
+            if (!validation.success) {
+                throw new ValidationError(validation.error.errors[0].message);
             }
+
+            const { name } = validation.data;
 
             const existingWorkout = await workoutRepository.findByName(name);
             if (existingWorkout) {
@@ -59,11 +62,14 @@ export async function workoutRoutes(fastify, options) {
     fastify.put('/workouts/:id', async (request, reply) => {
         try {
             const { id } = request.params;
-            const { name } = request.body;
 
-            if (!name || name.trim() === '') {
-                throw new ValidationError('Name is required');
+            // Validação com Zod
+            const validation = updateWorkoutSchema.safeParse(request.body);
+            if (!validation.success) {
+                throw new ValidationError(validation.error.errors[0].message);
             }
+
+            const { name } = validation.data;
 
             const existingWorkout = await workoutRepository.findById(id);
             if (!existingWorkout) {

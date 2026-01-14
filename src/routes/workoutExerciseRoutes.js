@@ -4,6 +4,7 @@ import { ExerciseRepository } from '../repositories/ExerciseRepository.js';
 import { NotFoundError } from '../errors/NotFoundError.js';
 import { ValidationError } from '../errors/ValidationError.js';
 import { ConflictError } from '../errors/ConflictError.js';
+import { createWorkoutExerciseSchema, updateWorkoutExerciseSchema } from '../schemas/workoutExerciseSchemas.js';
 
 const workoutExerciseRepository = new WorkoutExerciseRepository();
 const workoutRepository = new WorkoutRepository();
@@ -30,7 +31,13 @@ export async function workoutExerciseRoutes(fastify, options) {
     fastify.post('/workouts/:workoutId/exercises', async (request, reply) => {
         try {
             const { workoutId } = request.params;
-            const { exercise_id, weight, sets, reps } = request.body;
+
+            const validation = createWorkoutExerciseSchema.safeParse(request.body);
+            if (!validation.success) {
+                throw new ValidationError(validation.error.errors[0].message);
+            }
+
+            const { exercise_id, weight, sets, reps } = validation.data;
 
             const workout = await workoutRepository.findById(workoutId);
             if (!workout) {
@@ -45,18 +52,6 @@ export async function workoutExerciseRoutes(fastify, options) {
             const existing = await workoutExerciseRepository.findByWorkoutAndExercise(workoutId, exercise_id);
             if (existing) {
                 throw new ConflictError('Exercise already exists in this workout');
-            }
-
-            if (weight < 0) {
-                throw new ValidationError('Weight cannot be negative');
-            }
-
-            if (!sets || sets < 1) {
-                throw new ValidationError('Sets must be at least 1');
-            }
-
-            if (!reps || reps < 1) {
-                throw new ValidationError('Reps must be at least 1');
             }
 
             const workoutExercise = await workoutExerciseRepository.create({
@@ -79,30 +74,24 @@ export async function workoutExerciseRoutes(fastify, options) {
     fastify.put('/workouts/:workoutId/exercises/:exerciseId', async (request, reply) => {
         try {
             const { workoutId, exerciseId } = request.params;
-            const { weight, sets, reps } = request.body;
+
+            const validation = updateWorkoutExerciseSchema.partial().safeParse(request.body);
+            if (!validation.success) {
+                throw new ValidationError(validation.error.errors[0].message);
+            }
 
             const existing = await workoutExerciseRepository.findByWorkoutAndExercise(workoutId, exerciseId);
             if (!existing) {
                 throw new NotFoundError('Exercise not found in this workout');
             }
 
-            if (weight !== undefined && weight < 0) {
-                throw new ValidationError('Weight cannot be negative');
-            }
+            const updateData = {
+                weight: validation.data.weight !== undefined ? validation.data.weight : existing.weight,
+                sets: validation.data.sets !== undefined ? validation.data.sets : existing.sets,
+                reps: validation.data.reps !== undefined ? validation.data.reps : existing.reps
+            };
 
-            if (sets !== undefined && sets < 1) {
-                throw new ValidationError('Sets must be at least 1');
-            }
-
-            if (reps !== undefined && reps < 1) {
-                throw new ValidationError('Reps must be at least 1');
-            }
-
-            const workoutExercise = await workoutExerciseRepository.update(existing.id, {
-                weight: weight !== undefined ? weight : existing.weight,
-                sets: sets !== undefined ? sets : existing.sets,
-                reps: reps !== undefined ? reps : existing.reps
-            });
+            const workoutExercise = await workoutExerciseRepository.update(existing.id, updateData);
             
             return reply.status(200).send({ 
                 message: 'Workout exercise updated successfully',

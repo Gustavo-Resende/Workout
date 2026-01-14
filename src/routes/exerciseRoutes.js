@@ -2,6 +2,7 @@ import { ExerciseRepository } from '../repositories/ExerciseRepository.js';
 import { NotFoundError } from '../errors/NotFoundError.js';
 import { ValidationError } from '../errors/ValidationError.js';
 import { ConflictError } from '../errors/ConflictError.js';
+import { createExerciseSchema, updateExerciseSchema } from '../schemas/exerciseSchemas.js';
 
 const exerciseRepository = new ExerciseRepository();
 
@@ -34,11 +35,12 @@ export async function exerciseRoutes(fastify, options) {
 
     fastify.post('/exercises', async (request, reply) => {
         try {
-            const { name, muscle_group } = request.body;
-
-            if (!name || name.trim() === '') {
-                throw new ValidationError('Name is required');
+            const validation = createExerciseSchema.safeParse(request.body);
+            if (!validation.success) {
+                throw new ValidationError(validation.error.errors[0].message);
             }
+
+            const { name, muscle_group } = validation.data;
 
             const existingExercise = await exerciseRepository.findByName(name);
             if (existingExercise) {
@@ -59,11 +61,13 @@ export async function exerciseRoutes(fastify, options) {
     fastify.put('/exercises/:id', async (request, reply) => {
         try {
             const { id } = request.params;
-            const { name, muscle_group } = request.body;
 
-            if (!name || name.trim() === '') {
-                throw new ValidationError('Name is required');
+            const validation = updateExerciseSchema.safeParse(request.body);
+            if (!validation.success) {
+                throw new ValidationError(validation.error.errors[0].message);
             }
+
+            const { name, muscle_group } = validation.data;
 
             const existingExercise = await exerciseRepository.findById(id);
             if (!existingExercise) {

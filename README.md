@@ -16,6 +16,7 @@ Sistema de gestão de treinos que permite:
 - **Fastify** - Framework web rápido e moderno
 - **PostgreSQL** - Banco de dados relacional
 - **pg** - Cliente PostgreSQL para Node.js
+- **Zod** - Biblioteca de validação de schemas
 - **dotenv** - Gerenciamento de variáveis de ambiente
 - **Docker** - Containerização da aplicação e banco de dados
 
@@ -144,6 +145,10 @@ workout/
 │   │   ├── workoutRoutes.js              # Rotas - Treinos
 │   │   ├── exerciseRoutes.js             # Rotas - Exercícios
 │   │   └── workoutExerciseRoutes.js      # Rotas - Relacionamento
+│   ├── schemas/
+│   │   ├── workoutSchemas.js             # Schemas Zod - Treinos
+│   │   ├── exerciseSchemas.js            # Schemas Zod - Exercícios
+│   │   └── workoutExerciseSchemas.js     # Schemas Zod - Relacionamento
 │   └── server.js                          # Arquivo principal (entrada da aplicação)
 ├── docker-compose.yml                     # Configuração Docker Compose
 ├── Dockerfile                             # Configuração da imagem Docker
@@ -284,23 +289,27 @@ Content-Type: application/json
 
 ## 🔐 Validações e Regras de Negócio
 
+O projeto utiliza **Zod** para validação de schemas na camada de rotas, garantindo que os dados de entrada estejam corretos antes de serem processados.
+
 ### Workouts (Treinos)
-- Nome é obrigatório
-- Não permite treinos com mesmo nome para o mesmo usuário
-- CASCADE delete: ao deletar treino, remove exercícios vinculados automaticamente
+- **Validação Zod**: Nome é obrigatório (string não vazia)
+- **Regra de negócio**: Não permite treinos com mesmo nome para o mesmo usuário
+- **CASCADE delete**: Ao deletar treino, remove exercícios vinculados automaticamente
 
 ### Exercises (Exercícios)
-- Nome é obrigatório
-- Nome único global (não pode repetir)
-- Muscle_group é opcional
+- **Validação Zod**: Nome é obrigatório (string não vazia), muscle_group é opcional
+- **Regra de negócio**: Nome único global (não pode repetir)
 
 ### Workout Exercises (Relacionamento)
-- Workout e Exercise devem existir
-- Não permite mesmo exercício repetido no mesmo treino
-- Weight >= 0 (não pode ser negativo)
-- Sets >= 1 (mínimo 1 série)
-- Reps >= 1 (mínimo 1 repetição)
-- Permite atualização parcial (atualizar apenas weight, ou só sets, etc.)
+- **Validação Zod**: 
+  - `exercise_id`: obrigatório (string)
+  - `weight`: número >= 0 (não pode ser negativo)
+  - `sets`: número >= 1 (mínimo 1 série)
+  - `reps`: número >= 1 (mínimo 1 repetição)
+- **Regra de negócio**: 
+  - Workout e Exercise devem existir
+  - Não permite mesmo exercício repetido no mesmo treino
+  - Permite atualização parcial (atualizar apenas weight, ou só sets, etc.)
 
 ## 📊 Códigos de Status HTTP
 
@@ -323,13 +332,22 @@ O projeto inclui um arquivo `.http` com exemplos de requisições para testar to
 
 ## 🏗️ Arquitetura
 
-O projeto segue o padrão Repository Pattern com tratamento de erros centralizado:
+O projeto segue o padrão Repository Pattern com tratamento de erros centralizado e validação com Zod:
 
-- **Routes**: Camada de rotas (endpoints HTTP) - recebe requisições e delega para repositories
-- **Repositories**: Camada de acesso a dados (lógica de banco) - abstrai operações SQL
+- **Routes**: Camada de rotas (endpoints HTTP) - recebe requisições, valida com Zod e delega para repositories
+- **Schemas**: Definição de schemas Zod para validação de entrada (request.body)
+- **Repositories**: Camada de acesso a dados (lógica de banco) - abstrai operações SQL, recebe dados já validados
 - **Database**: Configuração de conexão (pool PostgreSQL)
 - **Errors**: Classes de erro customizadas para diferentes tipos de falha
 - **Middleware**: Tratamento global de erros (errorHandler) - converte erros em respostas HTTP apropriadas
+
+### Fluxo de Validação:
+
+```
+Request HTTP → Route (valida com Zod) → Repository (executa query) → Response
+                    ↓ (se falhar)
+              ValidationError (400)
+```
 
 ## 🤝 Contribuindo
 
