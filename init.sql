@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    user_id UUID REFERENCES users(id),
+    user_id UUID NOT NULL REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(name, user_id)
 );
@@ -19,9 +19,11 @@ CREATE TABLE IF NOT EXISTS workouts (
 -- Tabela de Exercícios
 CREATE TABLE IF NOT EXISTS exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id),
     muscle_group VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name, user_id)
 );
 
 -- Tabela de Relacionamento
@@ -29,6 +31,7 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
     exercise_id UUID NOT NULL REFERENCES exercises(id),
+    user_id UUID NOT NULL REFERENCES users(id),
     weight DECIMAL(5,2) NOT NULL CHECK (weight >= 0),
     sets INTEGER NOT NULL CHECK (sets >= 1),
     reps INTEGER NOT NULL CHECK (reps >= 1),
