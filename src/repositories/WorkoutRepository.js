@@ -2,17 +2,18 @@ import { query } from '../database/database-postgres.js';
 
 export class WorkoutRepository {
     
-    async list() {
+    async list(userId) {
         const result = await query(
-            'SELECT * FROM workouts ORDER BY created_at DESC'
+            'SELECT * FROM workouts WHERE user_id = $1 ORDER BY created_at DESC',
+            [userId]
         );
         return result.rows;
     }
 
-    async findById(id) {
+    async findById(id, userId) {
         const result = await query(
-            'SELECT * FROM workouts WHERE id = $1',
-            [id]
+            'SELECT * FROM workouts WHERE id = $1 AND user_id = $2',
+            [id, userId]
         );
         return result.rows[0];
     }
@@ -22,30 +23,29 @@ export class WorkoutRepository {
             `INSERT INTO workouts (name, user_id)
              VALUES ($1, $2)
              RETURNING *`,
-            [workout.name, workout.user_id || null]
+            [workout.name, workout.user_id]
         );
         return result.rows[0];
     }
 
-    async update(id, workout) {
+    async update(id, workout, userId) {
         const result = await query(
             `UPDATE workouts 
              SET name = $1
-             WHERE id = $2
+             WHERE id = $2 AND user_id = $3
              RETURNING *`,
-            [workout.name, id]
+            [workout.name, id, userId]
         );
         return result.rows[0];
     }
 
-    async delete(id) {
-        await query('DELETE FROM workouts WHERE id = $1', [id]);
+    async delete(id, userId) {
+        await query('DELETE FROM workouts WHERE id = $1 AND user_id = $2', [id, userId]);
     }
 
-    // Verificar se já existe treino com o mesmo nome (para o mesmo usuário)
-    async findByName(name, user_id = null) {
+    async findByName(name, user_id) {
         const result = await query(
-            'SELECT * FROM workouts WHERE name = $1 AND (user_id = $2 OR user_id IS NULL)',
+            'SELECT * FROM workouts WHERE name = $1 AND user_id = $2',
             [name, user_id]
         );
         return result.rows[0];
