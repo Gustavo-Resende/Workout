@@ -1,0 +1,89 @@
+### ========================================
+### WORKOUT EXERCISES - Relacionamento
+### ========================================
+### Rotas protegidas (requerem token JWT)
+
+@baseUrl = http://localhost:3001
+@token = seu-token-aqui
+
+### Listar exercícios de um treino (substitua {workoutId} pelo ID real)
+GET {{baseUrl}}/workouts/{workoutId}/exercises
+Authorization: Bearer {{token}}
+
+###
+
+### Adicionar exercício ao treino (substitua {workoutId} e {exerciseId} pelos IDs reais)
+POST {{baseUrl}}/workouts/{workoutId}/exercises
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "exercise_id": "{exerciseId}",
+    "weight": 60.5,
+    "sets": 3,
+    "reps": 12
+}
+
+###
+
+### Atualizar peso/séries/reps (substitua {workoutId} e {exerciseId} pelos IDs reais)
+PUT {{baseUrl}}/workouts/{workoutId}/exercises/{exerciseId}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "weight": 65.0,
+    "sets": 4,
+    "reps": 10
+}
+
+###
+
+### Atualizar apenas peso (atualização parcial)
+PUT {{baseUrl}}/workouts/{workoutId}/exercises/{exerciseId}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "weight": 70.0
+}
+
+###
+
+### Remover exercício do treino (substitua {workoutId} e {exerciseId} pelos IDs reais)
+DELETE {{baseUrl}}/workouts/{workoutId}/exercises/{exerciseId}
+Authorization: Bearer {{token}}
+
+###
+
+### ========================================
+### TESTES DE VALIDAÇÃO
+### ========================================
+
+### Teste: Adicionar exercício duplicado (erro 409)
+POST {{baseUrl}}/workouts/{workoutId}/exercises
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "exercise_id": "mesmo-exercise-id-de-cima",
+    "weight": 60.5,
+    "sets": 3,
+    "reps": 12
+}
+
+###
+
+### Teste: Peso negativo (erro 400)
+POST {{baseUrl}}/workouts/{workoutId}/exercises
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "exercise_id": "outro-exercise-id",
+    "weight": -10,
+    "sets": 3,
+    "reps": 12
+}
+
+###

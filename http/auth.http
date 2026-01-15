@@ -1,0 +1,35 @@
+### ========================================
+### AUTENTICAÇÃO
+### ========================================
+### Rotas públicas (não requerem token)
+
+@baseUrl = http://localhost:3001
+
+### Registrar novo usuário
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "name": "Teste de Registro",
+    "email": "teste@example.com",
+    "password": "senha123"
+}
+
+###
+
+### Fazer login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "teste@example.com",
+    "password": "senha123"
+}
+
+###
+
+### INSTRUÇÕES:
+### 1. Execute o login acima
+### 2. Copie o token da resposta (campo "token")
+### 3. Cole no arquivo _variables.http na variável @token
+### 4. Exemplo: @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
