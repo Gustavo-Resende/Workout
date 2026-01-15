@@ -1,0 +1,79 @@
+### ========================================
+### WORKOUTS - CRUD Completo
+### ========================================
+### Rotas protegidas (requerem token JWT)
+
+@baseUrl = http://localhost:3001
+@token = seu-token-aqui
+
+### Listar todos os treinos
+GET {{baseUrl}}/workouts
+Authorization: Bearer {{token}}
+
+###
+
+### Criar novo treino
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Treino A - Peito e Tríceps"
+}
+
+###
+
+### Criar outro treino
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Treino B - Costas e Bíceps"
+}
+
+###
+
+### Buscar treino por ID (substitua {id} pelo ID real)
+GET {{baseUrl}}/workouts/{id}
+Authorization: Bearer {{token}}
+
+###
+
+### Atualizar treino (substitua {id} pelo ID real)
+PUT {{baseUrl}}/workouts/{id}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Treino A - Atualizado"
+}
+
+###
+
+### Deletar treino (substitua {id} pelo ID real)
+DELETE {{baseUrl}}/workouts/{id}
+Authorization: Bearer {{token}}
+
+###
+
+### ========================================
+### TESTES DE VALIDAÇÃO
+### ========================================
+
+### Teste: Criar treino sem nome (erro 400)
+POST {{baseUrl}}/workouts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": ""
+}
+
+###
+
+### Teste: Buscar treino inexistente (erro 404)
+GET {{baseUrl}}/workouts/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+###

@@ -1,0 +1,12 @@
+### ========================================
+### VARIÁVEIS COMPARTILHADAS
+### ========================================
+### Use estas variáveis em todos os arquivos HTTP
+
+@baseUrl = http://localhost:3001
+@token = 
+
+### INSTRUÇÕES:
+### 1. Faça login ou registro em auth.http
+### 2. Copie o token da resposta
+### 3. Cole aqui: @token = seu-token-aqui

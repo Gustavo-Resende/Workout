@@ -1,0 +1,87 @@
+### ========================================
+### EXERCISES - CRUD Completo
+### ========================================
+### Rotas protegidas (requerem token JWT)
+
+@baseUrl = http://localhost:3001
+@token = seu-token-aqui
+
+### Listar todos os exercícios
+GET {{baseUrl}}/exercises
+Authorization: Bearer {{token}}
+
+###
+
+### Criar novo exercício
+POST {{baseUrl}}/exercises
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Supino Reto",
+    "muscle_group": "Peito"
+}
+
+###
+
+### Criar outro exercício
+POST {{baseUrl}}/exercises
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Leg Press",
+    "muscle_group": "Perna"
+}
+
+###
+
+### Criar exercício sem muscle_group (opcional)
+POST {{baseUrl}}/exercises
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Abdominal"
+}
+
+###
+
+### Buscar exercício por ID (substitua {id} pelo ID real)
+GET {{baseUrl}}/exercises/{id}
+Authorization: Bearer {{token}}
+
+###
+
+### Atualizar exercício (substitua {id} pelo ID real)
+PUT {{baseUrl}}/exercises/{id}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Supino Inclinado",
+    "muscle_group": "Peito"
+}
+
+###
+
+### Deletar exercício (substitua {id} pelo ID real)
+DELETE {{baseUrl}}/exercises/{id}
+Authorization: Bearer {{token}}
+
+###
+
+### ========================================
+### TESTES DE VALIDAÇÃO
+### ========================================
+
+### Teste: Criar exercício duplicado (erro 409)
+POST {{baseUrl}}/exercises
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "Supino Reto"
+}
+
+###
